@@ -1,0 +1,11 @@
+[Unit]
+Description=newsback-api-service daemon
+
+[Service]
+User=newsback-api-service
+EnvironmentFile=/etc/default/newsback-api-service
+ExecStart=/usr/bin/newsback-api-service daemon
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+Restart=on-failure
+RestartSec=42s

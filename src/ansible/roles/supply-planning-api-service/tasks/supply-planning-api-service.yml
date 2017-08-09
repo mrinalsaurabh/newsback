@@ -1,0 +1,70 @@
+---
+
+- name: Create destination directory for jar
+  file: path=/usr/lib/{{ service }} state=directory
+
+- name: remove jar from server
+  file: path=/usr/lib/{{ service }}/{{ service }}.jar state=absent
+
+- name: copy jar from agent to server
+  copy:
+    src={{ service }}.jar
+    dest=/usr/lib/{{ service }}
+
+- name: Create {{ service }} group
+  group:
+    name={{ service }}
+
+- name: Create {{ service }} user
+  user:
+    name={{ service }}
+    group={{ service }}
+    shell=/bin/bash
+
+- file:
+    path=/var/log/{{ service }} state=directory mode="u+rwx" owner={{ service }} group={{ service }}
+
+- name: Creates GC log directory
+  file:
+    path=/tmp/{{ service }}-gc
+    state=directory
+    owner={{ service }}
+    group={{ service }}
+    mode=0755
+
+- name: Creates Application log directory
+  file:
+    path=/var/log/{{ service }}
+    state=directory
+    owner={{ service }}
+    group={{ service }}
+    mode=0755
+
+- name: remove service script to install new one
+  file: path=/usr/lib/systemd/system/{{ service }}.service state=absent
+
+- name: Create service
+  template:
+    src={{ service }}.j2
+    dest=/usr/bin/{{ service }}
+    owner={{ service }}
+    group={{ service }}
+    mode="u=rwx,g=rw,o=r"
+
+- name: Configure service
+  template:
+    src={{ service }}.default.j2
+    dest=/etc/default/{{ service }}
+    owner={{ service }}
+    group={{ service }}
+  notify: Restart service
+
+- name: Configure service script
+  copy:
+    src={{ service }}.service
+    dest=/usr/lib/systemd/system/{{ service }}.service
+
+- name: Supply planning API Started
+  service:
+    name={{ service }}
+    state=restarted

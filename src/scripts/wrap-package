@@ -1,0 +1,11 @@
+#!/bin/bash -eu
+
+DIR=$(cd `dirname ${BASH_SOURCE}` > /dev/null && pwd)
+TARGET=$DIR/../../target
+PACKAGE_DIR=$TARGET/package
+
+mkdir -p $PACKAGE_DIR
+cp -r $DIR/../ansible $PACKAGE_DIR
+
+JAR=$TARGET/uberjar/newsback-api-service.jar
+cp $JAR $PACKAGE_DIR/ansible/roles/newsback-api-service/files/newsback-api-service.jar

@@ -1,0 +1,10 @@
+---
+
+- hosts: all
+  user: ansible
+  sudo: yes
+  vars:
+    service: newsback-api-service
+  roles:
+    - security
+    - newsback-api-service

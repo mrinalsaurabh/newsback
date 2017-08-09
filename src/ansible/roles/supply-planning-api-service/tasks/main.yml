@@ -1,0 +1,2 @@
+---
+- include: newsback-api-service.yml

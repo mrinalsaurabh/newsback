@@ -1,0 +1,54 @@
+#!/bin/bash -eu
+
+DIR=$(cd `dirname ${BASH_SOURCE}` > /dev/null && pwd)
+
+SECURE_VARS=`mktemp --dry-run`
+SECURE_VARS_JSON=$SECURE_VARS.json
+SECURE_VARS_PASSWORD=$SECURE_VARS.password
+
+function clean_up {
+    echo "Cleaning up"
+    rm -f $SECURE_VARS_PASSWORD
+    rm -f $SECURE_VARS_JSON
+}
+
+trap clean_up SIGHUP SIGINT SIGTERM ERR 0
+
+cat << EOF > $SECURE_VARS_PASSWORD
+$VAULT_PASSWORD
+EOF
+
+cat << VARS > $SECURE_VARS_JSON
+{"aws_access_key_id": "$AWS_ACCESS_KEY_ID",
+ "aws_secret_access_key": "$AWS_SECRET_ACCESS_KEY",
+ "aws_url": "$AWS_URL",
+ "database_url": "$DATABASE_URL",
+ "data_dog_host_name": "$HOST",
+ "data_dog_instance_name": "$DATA_DOG_INSTANCE_NAME",
+ "data_dog_api_key": "$DATA_DOG_API_KEY",
+ "gofigure_url": "$GOFIGURE_URL",
+ "gofigure_api_username": "$GOFIGURE_API_USERNAME",
+ "gofigure_api_password": "$GOFIGURE_API_PASSWORD"
+}
+VARS
+
+if [ -f "$ANSIBLE_VAULT_PASSWORD_FILE" ]; then
+    ansible-vault encrypt --vault-password-file=$ANSIBLE_VAULT_PASSWORD_FILE $SECURE_VARS_JSON
+    ansible-playbook -i "$HOST," \
+                 --private-key=$ANSIBLE_KEY \
+                 --vault-password-file $ANSIBLE_VAULT_PASSWORD_FILE \
+                 --extra-vars "@$SECURE_VARS_JSON" \
+                 $DIR/deploy.yml
+else
+cat << "EOF" >> $SECURE_VARS_PASSWORD
+$VAULT_PASSWORD
+EOF
+
+ansible-vault encrypt --vault-password-file=$SECURE_VARS_PASSWORD $SECURE_VARS_JSON
+
+ansible-playbook -i "$HOST," \
+                 --private-key=$ANSIBLE_KEY \
+                 --vault-password-file $SECURE_VARS_PASSWORD \
+                 --extra-vars "@$SECURE_VARS_JSON" \
+                 $DIR/deploy.yml
+fi

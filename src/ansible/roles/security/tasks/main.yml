@@ -1,0 +1,6 @@
+---
+- name: install yum security
+  yum: pkg=yum-plugin-security state=latest
+
+- name: apply all security patches
+  shell: yum --assumeyes update --security

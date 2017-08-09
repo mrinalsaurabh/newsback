@@ -1,0 +1,72 @@
+(ns newsback-api.test.services.plan
+  (:use midje.sweet)
+  (:require [clj-time.core :as time]
+            [newsback-api.test.plan-test-data :as test-data]
+            [newsback-api.test.services.plan-empty-structure :as empty-structure]
+            [newsback-api.services.plan :as plan-service]
+            [newsback-api.data.plans :as plan-data]
+            [newsback-api.services.headcount :as headcount-service]
+            [newsback-api.test.services.copied-plan :as test-data-copied]))
+
+(facts "Plan service"
+       (fact "should return the previous month and year"
+             (with-redefs [plan-service/current-date (fn [] (time/date-time 2017 1))]
+
+             (let [expected-data {:plan-month 12 :plan-year 2016}]
+               (plan-service/last-planning-time) => expected-data)))
+
+       (fact "should return default supply plan if there is no existing supply plan"
+             (let [country {:id 1 :country-id "australia" :name "Australia"}
+                   expected-data (empty-structure/plan-test-data)
+                   user {:user-id "test-user@tw.net"}]
+
+               (plan-service/plan country user) => expected-data
+
+               (provided (headcount-service/opening-headcount 4 2017 "Australia") => 200.0 :times 1
+                         (plan-data/plan country 5 2017) => nil :times 1
+                         (plan-data/plan country 4 2017) => nil :times 1
+                         (plan-service/current-date) => (time/date-time 2017 5 20) :times 2)))
+
+       (fact "should copy plan from previous month if plan does not exist for current month, but exists for previous planning month"
+             (let [country {:id 1 :country-id "australia" :name "Australia"}
+                   expected-data (assoc (test-data-copied/updated-plan-data-with-headcount-from-gofigure) :country-id "australia" :country-name "Australia")
+                   user {:user-id "test-user@tw.net"}]
+
+               (plan-service/plan country user) => expected-data
+
+               (provided (headcount-service/opening-headcount 5 2017 "Australia") => 200 :times 1
+                         (plan-data/plan country 6 2017) => nil :times 1
+                         (plan-data/plan country 5 2017) => (test-data/plan-without-country) :times 1
+                         (plan-service/current-date) => (time/date-time 2017 6 20) :times 2)))
+
+       (fact "should get the supply plan if it exists for the given plan-month"
+             (let [country {:id 1 :country-id "australia" :name "Australia"}
+                   expected-data (assoc (test-data/plan-without-country) :country-id "australia" :country-name "Australia")
+                   user {:user-id "test-user@tw.net"}]
+
+               (plan-service/plan country user) => expected-data
+
+               (provided (plan-data/plan country 5 2017) => (test-data/plan-without-country) :times 1
+                         (plan-service/current-date) => (time/date-time 2017 5 20) :times 1)))
+
+       (fact "should update only current opening headcount with headcount of previous closing month"
+             (let [closing-headcount 200
+                   expected-plan (test-data-copied/updated-plan-data-with-headcount-from-gofigure)
+                   plan-month 6
+                   plan-year 2017
+                   country {:id 1 :country-id "australia" :name "Australia"}
+                   user {:user-id "test-user@tw.net"}]
+
+               (plan-service/updated-plan-with-opening-headcount (:plan (test-data-copied/plan-test-data)) closing-headcount plan-month plan-year country user) => (:plan expected-plan))))
+
+(facts "Plan service"
+       (fact "should save current month plan data for the given country"
+             ;; (with-redefs [plan-service/current-date (fn [] (time/date-time 2017 1))]
+             ;;   (let [country {:id 1 :country-id "australia" :name "Australia"}
+             ;;         plan [{:attrition 1}]
+             ;;         user {:user-id "test-user@tw.net"}]
+             ;;     (plan-service/save country plan user) => nil
+
+             ;;     (provided (plan-data/save country 5 2017 plan user) => nil :times 1
+             ;;               (plan-service/current-date) => (time/date-time 2017 5 20) :times 1))
+               ))

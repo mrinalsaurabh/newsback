@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# Ensure child processes exit on signal
+trap "kill -- -$BASHPID" EXIT
+
+DATE=`date +%Y-%m-%d-%H-%M`
+
+java -Xloggc:/tmp/newsback-api-service-gc/gc-$TIME.log -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=2 -XX:GCLogFileSize=16M -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+PrintPromotionFailure -XX:+PrintStringTableStatistics -XX:+PrintTenuringDistribution -Xms256m -Xmx1g -XX:ParallelGCThreads=2 -XX:+UseParallelGC -XX:+UseParallelOldGC -XX:+PrintCommandLineFlags -jar /usr/lib/newsback-api-service/newsback-api-service.jar "$@" false
