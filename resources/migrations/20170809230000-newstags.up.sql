@@ -5,4 +5,4 @@ CREATE TABLE IF NOT EXISTS newstags (
   FOREIGN KEY (newsid) REFERENCES newsdetails(id),
   FOREIGN KEY (tagid) REFERENCES tags(id));
 
-CREATE INDEX newstags_idx ON tags(id);
+CREATE INDEX newstags_idx ON newstags(id);
