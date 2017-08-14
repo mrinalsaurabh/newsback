@@ -6,8 +6,7 @@
             [buddy.auth.accessrules :refer [restrict]]
             [buddy.auth :refer [authenticated?]]
             [newsback-api.rest.error-handler :as e]
-            [newsback-api.rest.countries-resource :as countries]
-            [newsback-api.rest.plan-resource :as plan]))
+            [newsback-api.rest.news-resource :as news]))
 
 (defn access-error [_ _]
   (unauthorized {:error "unauthorized"}))
@@ -40,5 +39,4 @@
 
   (context "/api" []
            :tags ["Supply Plan"]
-           countries/routes
-           plan/routes))
+           news/routes))
